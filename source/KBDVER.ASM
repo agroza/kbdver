@@ -172,8 +172,6 @@ start:
 
   in al,60h
 
-  sti
-
   call printHexByte
 
   lea si,sAddition1
@@ -185,6 +183,8 @@ start:
   call printString
 
 .finish:
+  sti
+
   popf
 
   mov ax,4C00h
