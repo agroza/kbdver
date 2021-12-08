@@ -1,5 +1,5 @@
 # kbdver
-Keyboard Controller Version
+Keyboard Controller Version Program
 
 ## Synopsis
 
