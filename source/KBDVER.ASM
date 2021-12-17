@@ -6,13 +6,17 @@
 ; - License: GNU General Public License v3.0                                -
 ; ---------------------------------------------------------------------------
 
+LOCALS @@
+
+P8086
 MODEL TINY
 
 CODESEG
+  org 100h
 
 STARTUPCODE
 
-  jmp start
+  jmp @start
 
 ; Constants Section
 ; ---------------------------------------------------------------------------
@@ -31,12 +35,15 @@ STARTUPCODE
 ; Preserves:
 ;     none
 ; ---------------------------------------------------------------------------
-printChar:
+printChar proc
+
   mov ah,0Eh
   mov bx,0007h
   int 10h
 
   ret
+
+printChar endp
 
 ; Prints a null-terminated string.
 ; Input:
@@ -48,25 +55,28 @@ printChar:
 ; Preserves:
 ;     AX
 ; ---------------------------------------------------------------------------
-printString:
+printString proc
+
   push ax
 
   mov ah,0Eh
   mov bx,0007h
 
-.repeat:
+@@repeat:
   lodsb
 
-  cmp al,00h
-  je .done
+  or al,al
+  jz @@exit
   int 10h
 
-  jmp .repeat
+  jmp @@repeat
 
-.done:
+@@exit:
   pop ax
 
   ret
+
+printString endp
 
 ; Prints a hexadecimal digit.
 ; Input:
@@ -78,22 +88,25 @@ printString:
 ; Preserves:
 ;     AX
 ; ---------------------------------------------------------------------------
-printHexDigit:
+printHexDigit proc
+
   push ax
 
-.continue:
+@@continue:
   and al,0Fh
   add al,'0'
   cmp al,'9'
-  jna .print
+  jna @@print
   add al,19h
 
-.print:
+@@print:
   call printChar
 
   pop ax
 
   ret
+
+printHexDigit endp
 
 ; Prints a hexadecimal number.
 ; Input:
@@ -101,18 +114,17 @@ printHexDigit:
 ; Output:
 ;     none
 ; Affects:
-;     none
+;     CL
 ; Preserves:
 ;     AX
 ; ---------------------------------------------------------------------------
-printHexByte:
+printHexByte proc
+
   push ax
 
   mov ah,al
-  shr al,1
-  shr al,1
-  shr al,1
-  shr al,1
+  mov cl,04h
+  shr al,cl
 
   call printHexDigit
 
@@ -125,6 +137,8 @@ printHexByte:
 
   ret
 
+printHexByte endp
+
 ; Waits for the keyboard controller to be ready.
 ; Input:
 ;     CX - number of retries
@@ -135,25 +149,30 @@ printHexByte:
 ; Preserves:
 ;     CX
 ; ---------------------------------------------------------------------------
-waitKbd:
-.try:
+waitKbd proc
+
+@@try:
   push cx
 
   xor cx,cx
 
-.poll:
+@@poll:
   in al,64h
-  test al,1
-  loope .poll
+  test al,01h
+  
+  loope @@poll
 
   pop cx
-  loope .try
+
+  loope @@try
 
   ret
 
+waitKbd endp
+
 ; Main Program Entrypoint
 ; ---------------------------------------------------------------------------
-start:
+@start:
   lea si,sHeader
   call printString
   lea si,sKeyboardVer
@@ -166,9 +185,9 @@ start:
   mov al,0A1h
   out 64h,al
 
-  mov cx,1
+  mov cx,01h
   call waitKbd
-  jz .finish
+  jz @exit
 
   in al,60h
 
@@ -182,7 +201,7 @@ start:
   lea si,sAddition2
   call printString
 
-.finish:
+@exit:
   sti
 
   popf
